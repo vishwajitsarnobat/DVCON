@@ -56,6 +56,7 @@ class TaskAwareYOLO(nn.Module):
         Input image tensor (B,3,640,640)
         """
         y=[]
+        task_id = task_id.to(self.task_embeddings.weight.device)
         task_emb=self.task_embeddings(task_id)
 
         for i, m in enumerate(self.layers):
@@ -89,7 +90,7 @@ def main():
 
     print(f"Using device: {device}")
     print("\nInitializing TaskAwareYOLO...")
-    model=TaskAwareYOLO(embedding_path='task_embeddings.pt')
+    model=TaskAwareYOLO(embedding_path='task_embeddings.pt').to(device)
     # turns off dropout, stabalizes batch norm
     model.eval() # specifically in pytorch, this switches from training mode to eval mode
 
