@@ -11,7 +11,6 @@
 - Start with creating embeddings, by running extract_task_embeddings.py
 - To view all created tensor embeddings, run view_embeddings.py
 
-
 ### Detailed Backbone Channel Structure (Typical)
 - Conv (0-P1/2): 64 channels (Downsampling)
 - Conv (1-P2/4): 128 channels (Downsampling)
@@ -23,6 +22,8 @@
 - Conv (7-P5/32): 1024 channels (Downsampling)
 - C2f (8): 1024 channels
 - SPPF (9): 1024 channels 
+
+But, yolov8n is 0.25 times typical yolov8n.
 
 ### Testing model.py with pruning layers
 vishwajit@fedora ~/Workspace/DVCON ±main⚡ » uv run model.py             2 ↵
@@ -63,3 +64,8 @@ Head returns tuple!
 Final output shape: torch.Size([1, 84, 8400])
 Meaning: (Batch Size, [Bounding box coordinates + class scores], Anchors)
 
+- We applied 2:4 sparsity pruning, which makes 50% weights of the model to be 0.
+- We need to train the model, currently 2 modifications have been done, first one being addition of custom layer for filtering out unwanted detections and second one being 2:4 sparsity. (training on COCO dataset).
+- The 2 changes need to be trained together as individual training will be almost useless.
+
+- The COCO-tasks annotations and COCO dataset needs to be downloaded.
