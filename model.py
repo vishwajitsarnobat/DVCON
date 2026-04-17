@@ -6,6 +6,8 @@ import torch
 import torch.nn as nn
 from ultralytics import YOLO
 
+from prune_utils import apply_2_4_sparsity
+
 class TaskGuidedFusionEngine(nn.Module):
     def __init__(self,feature_channels,embedding_dim=384):
         super().__init__()
@@ -33,7 +35,7 @@ class TaskAwareYOLO(nn.Module):
 
         # .yaml to initialize fresh architecture
         print("Loading base YOLOv8n model...")
-        yolo_wrapper = YOLO('yolov8n.yaml')
+        yolo_wrapper = YOLO('yolov8n.pt') # loading pretrained model instead of yaml file
         self.core_model = yolo_wrapper.model  
         
         # Extract the actual sequential list of layers inside the DetectionModel
@@ -56,7 +58,7 @@ class TaskAwareYOLO(nn.Module):
         Input image tensor (B,3,640,640)
         """
         y=[]
-        task_id = task_id.to(self.task_embeddings.weight.device)
+        task_id=task_id.to(self.task_embeddings.weight.device)
         task_emb=self.task_embeddings(task_id)
 
         for i, m in enumerate(self.layers):
@@ -86,18 +88,21 @@ class TaskAwareYOLO(nn.Module):
         return x # The final layer returns the actual bounding box predictions
 
 def main():
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print(f"Using device: {device}")
     print("\nInitializing TaskAwareYOLO...")
     model=TaskAwareYOLO(embedding_path='task_embeddings.pt').to(device)
+    print("\nApplying 2:4 structured sparsity")
+    model=apply_2_4_sparsity(model)
+
     # turns off dropout, stabalizes batch norm
     model.eval() # specifically in pytorch, this switches from training mode to eval mode
 
     dummy_img=torch.randn(1,3,640,640).to(device)
     dummy_task_id=torch.tensor([3]).to(device)
 
-    print("\n Running forward pass...")
+    print("\nRunning forward pass...")
     with torch.no_grad(): # no gradients needed for testing
         try:
             output=model(dummy_img,dummy_task_id)
@@ -114,7 +119,7 @@ def main():
             print(f"Final output shape: {main_output.shape}")
             print("Meaning: (Batch Size, [Bounding box coordinates + class scores], Anchors)")
         except Exception as e:
-            print(f"\n CRASH: PyTorch threw an error:")
+            print(f"\nCRASH: PyTorch threw an error:")
             print(e)
 
 if __name__=="__main__":
