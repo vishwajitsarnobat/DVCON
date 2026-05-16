@@ -9,6 +9,9 @@ from ultralytics import YOLO
 from prune_utils import apply_2_4_sparsity
 
 class TaskGuidedFusionEngine(nn.Module):
+    '''
+    This is for multiplying task embedding and necessary layers from yolo (one layer at a time) and match the dims
+    '''
     def __init__(self,feature_channels,embedding_dim=384):
         super().__init__()
         self.channel_projection=nn.Linear(embedding_dim,feature_channels) # defining the layer
@@ -30,6 +33,10 @@ class TaskGuidedFusionEngine(nn.Module):
         return gated_features
 
 class TaskAwareYOLO(nn.Module):
+    '''
+    Actual flow of data in yolo, actual image goes in, (p3,p4,p5) has features at different scale, task embedding is multiplied by them.
+    Data goes through all the layers and not just (p3,p4,p5) and gives out final output x.
+    '''
     def __init__(self, embedding_path='task_embeddings.pt'):
         super().__init__()
 
@@ -44,18 +51,19 @@ class TaskAwareYOLO(nn.Module):
         # YOLOv8 keeps a master list of which layers need to be saved for skip connections
         self.save_layers = self.core_model.save  
         
-        raw_embeddings = torch.load(embedding_path)
+        raw_embeddings = torch.load(embedding_path, map_location=device)
         # lookup table using indexing
         self.task_embeddings=nn.Embedding.from_pretrained(raw_embeddings,freeze=True) # (num_embeddings,embedding_dim) i.e. (14,384)
         # freeze=True is needed to avoid grad updates during backward pass
 
+        # just initialising the objects, used later in forward
         self.fusion_p3=TaskGuidedFusionEngine(feature_channels=64,embedding_dim=384)
         self.fusion_p4=TaskGuidedFusionEngine(feature_channels=128,embedding_dim=384)
         self.fusion_p5=TaskGuidedFusionEngine(feature_channels=256,embedding_dim=384)
 
     def forward(self,x,task_id):
         """
-        Input image tensor (B,3,640,640)
+        Input image tensor (B,3,640,640), 3 for RGB
         """
         y=[]
         task_id=task_id.to(self.task_embeddings.weight.device)
@@ -63,7 +71,7 @@ class TaskAwareYOLO(nn.Module):
 
         for i, m in enumerate(self.layers):
             # If the layer needs a specific previous layer (not just the immediate last one)
-            if m.f != -1:  
+            if m.f != -1:
                 if isinstance(m.f, list):  # Needs multiple layers (Concat)
                     x = [x if j == -1 else y[j] for j in m.f]
                 else:                      # Needs one specific layer
@@ -82,7 +90,7 @@ class TaskAwareYOLO(nn.Module):
             elif i == 9:
                 x = self.fusion_p5(x, task_emb)
 
-            # Save the output to our 'y' list ONLY if a future layer needs it
+            # Save the output to our 'y' list ONLY if a future layer needs it, to save memory
             y.append(x if i in self.save_layers else None)
             
         return x # The final layer returns the actual bounding box predictions
