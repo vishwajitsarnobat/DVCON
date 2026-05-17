@@ -2,10 +2,9 @@ import torch
 from types import SimpleNamespace
 from ultralytics.utils.loss import v8DetectionLoss
 from torch.optim.lr_scheduler import CosineAnnealingLR
-# Use the new recommended GradScaler API
 from torch.amp import GradScaler, autocast
 
-def train_sparse_model(model, train_loader, epochs=5, device="cuda"):
+def train_engine(model, train_loader, epochs=5, device="cuda"):
     model.train()
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
 

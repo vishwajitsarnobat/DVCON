@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from model import TaskAwareYOLO
 from prune_utils import apply_2_4_sparsity
 from dataloader import COCOTasksDataset, collate_fn
-from train_sparse_model import train_sparse_model
+from train_engine import train_engine
 
 def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -34,7 +34,7 @@ def main():
     
     # 4. Train the model
     print("\n4. Starting training phase...")
-    trained_model = train_sparse_model(model, train_loader, epochs=1, device=device)
+    trained_model = train_engine(model, train_loader, epochs=1, device=device)
     
     # 5. Save the weights
     torch.save(trained_model.state_dict(), 'yolov8n_sparse_healed.pt')

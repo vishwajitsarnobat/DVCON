@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from model import TaskAwareYOLO
 from quantize_utils import replace_with_quantized_layers
 from dataloader import COCOTasksDataset, collate_fn
-from train_sparse_model import train_sparse_model
+from train_engine import train_engine
 
 def main():
     # Make sure you have installed brevitas: `uv pip install brevitas`
@@ -47,7 +47,7 @@ def main():
     # We only need ~3 epochs because the model already knows the features, 
     # it just needs to adapt to the integer rounding math.
     print("\n5. Starting QAT Phase...")
-    qat_model = train_sparse_model(model, train_loader, epochs=1, device=device)
+    qat_model = train_engine(model, train_loader, epochs=1, device=device)
     
     # 6. Save the final hardware-ready model!
     torch.save(qat_model.state_dict(), 'yolov8n_sparse_qat.pt')

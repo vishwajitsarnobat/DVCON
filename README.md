@@ -135,7 +135,7 @@ uv run export_hardware.py
 
 ---
 
-## 📟 Hardware Handoff
+## Hardware Handoff
 
 Once Phase 4 is complete, the software stack is finished.
 
