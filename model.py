@@ -51,6 +51,7 @@ class TaskAwareYOLO(nn.Module):
         # YOLOv8 keeps a master list of which layers need to be saved for skip connections
         self.save_layers = self.core_model.save  
         
+        device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         raw_embeddings = torch.load(embedding_path, map_location=device)
         # lookup table using indexing
         self.task_embeddings=nn.Embedding.from_pretrained(raw_embeddings,freeze=True) # (num_embeddings,embedding_dim) i.e. (14,384)
