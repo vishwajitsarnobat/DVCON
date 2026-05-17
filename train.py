@@ -27,7 +27,10 @@ def main():
     )
     
     # Use collate_fn to properly format the bounding boxes for YOLO
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, collate_fn=collate_fn)
+    train_loader = DataLoader(
+        train_dataset, batch_size=16, shuffle=True,
+        collate_fn=collate_fn, num_workers=4, pin_memory=True
+    )
     
     # 4. Train the model
     print("\n4. Starting training phase...")
