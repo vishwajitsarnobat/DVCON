@@ -29,7 +29,7 @@ class COCOTasksDataset(Dataset):
         for task_id in range(1, 15): # Tasks 1 to 14
             json_file = os.path.join(self.annotation_dir, f"task_{task_id}_train.json")
             if not os.path.exists(json_file):
-                print(f"Failed to open file at index number {i}")
+                print(f"Failed to open file at index number {task_id}")
                 continue
                 
             with open(json_file, 'r') as f:
